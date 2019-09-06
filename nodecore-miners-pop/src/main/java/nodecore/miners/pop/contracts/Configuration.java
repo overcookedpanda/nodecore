@@ -31,6 +31,10 @@ public interface Configuration {
 
     ConfigurationResult setMinimumRelayFeeEnforced(String value);
 
+    boolean isBitcoinUseLocalhostPeer();
+
+    ConfigurationResult setBitcoinUseLocalhostPeer(String value);
+
     String getNodeCoreHost();
 
     ConfigurationResult setNodeCoreHost(String value);

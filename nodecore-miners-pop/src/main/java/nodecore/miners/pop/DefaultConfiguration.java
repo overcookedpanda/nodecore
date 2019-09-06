@@ -161,6 +161,15 @@ public class DefaultConfiguration implements Configuration {
     }
 
     @Override
+    public boolean isBitcoinUseLocalhostPeer() {
+        return getBoolean(Keys.BITCOIN_USE_LOCALHOST_PEER);
+    }
+    @Override
+    public ConfigurationResult setBitcoinUseLocalhostPeer(String value) {
+        return setBoolean(Keys.BITCOIN_USE_LOCALHOST_PEER, value);
+    }
+
+    @Override
     public String getNodeCoreHost() { return getPropertyOverrideOrDefault(Keys.NODECORE_HOST_KEY); }
     @Override
     public ConfigurationResult setNodeCoreHost(String value) {
@@ -395,6 +404,9 @@ public class DefaultConfiguration implements Configuration {
             case Keys.BITCOIN_MINIMUM_RELAY_FEE_ENFORCED_KEY:
                 result = setMinimumRelayFeeEnforced(value);
                 break;
+            case Keys.BITCOIN_USE_LOCALHOST_PEER:
+                result = setBitcoinUseLocalhostPeer(value);
+                break;
             case Keys.NODECORE_HOST_KEY:
                 result = setNodeCoreHost(value);
                 break;
@@ -568,9 +580,10 @@ public class DefaultConfiguration implements Configuration {
         private static final String BITCOIN_MAX_TRANSACTION_FEE_KEY = "bitcoin.fee.max";
         private static final String BITCOIN_TRANSACTION_FEE_PER_KB_KEY = "bitcoin.fee.perkb";
         private static final String BITCOIN_MINIMUM_RELAY_FEE_ENFORCED_KEY = "bitcoin.minrelayfee.enabled";
+        private static final String BITCOIN_USE_LOCALHOST_PEER = "bitcoin.use.localhost.peer";
+        private static final String NODECORE_USE_SSL_KEY = "nodecore.rpc.ssl";
         private static final String NODECORE_HOST_KEY = "nodecore.rpc.host";
         private static final String NODECORE_PORT_KEY = "nodecore.rpc.port";
-        private static final String NODECORE_USE_SSL_KEY = "nodecore.rpc.ssl";
         private static final String NODECORE_PASSWORD_KEY = "nodecore.rpc.password";
         private static final String NODECORE_CERT_CHAIN_PATH_KEY = "nodecore.rpc.cert.chain.path";
 

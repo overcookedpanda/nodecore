@@ -15,11 +15,7 @@ import nodecore.miners.pop.Constants;
 import nodecore.miners.pop.InternalEventBus;
 import nodecore.miners.pop.Threading;
 import nodecore.miners.pop.common.BitcoinNetwork;
-import nodecore.miners.pop.contracts.ApplicationExceptions.DuplicateTransactionException;
-import nodecore.miners.pop.contracts.ApplicationExceptions.UnableToAcquireTransactionLock;
-import nodecore.miners.pop.contracts.ApplicationExceptions.CorruptSPVChain;
-import nodecore.miners.pop.contracts.ApplicationExceptions.ExceededMaxTransactionFee;
-import nodecore.miners.pop.contracts.ApplicationExceptions.SendTransactionException;
+import nodecore.miners.pop.contracts.ApplicationExceptions.*;
 import nodecore.miners.pop.contracts.BitcoinService;
 import nodecore.miners.pop.contracts.Configuration;
 import nodecore.miners.pop.events.*;
@@ -30,6 +26,7 @@ import org.bitcoinj.core.listeners.BlocksDownloadedEventListener;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.bitcoinj.kits.WalletAppKit;
+import org.bitcoinj.params.RegTestParams;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.script.ScriptOpCodes;
@@ -43,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
@@ -117,7 +115,7 @@ public final class DefaultBitcoinService implements BitcoinService, BlocksDownlo
 
         DefaultBitcoinService self = this;
 
-        WalletAppKit kit = new WalletAppKit(context, new File("."), filePrefix) {
+        WalletAppKit kit = new WalletAppKit(context.getParams(), new File("."), filePrefix) {
             @Override
             protected void onSetupCompleted() {
                 super.onSetupCompleted();
@@ -136,6 +134,16 @@ public final class DefaultBitcoinService implements BitcoinService, BlocksDownlo
                 setServiceReady(true);
             }
         };
+
+        if (context.getParams().getId().equalsIgnoreCase("org.bitcoin.regtest")) { // quick hack
+            try {
+                PeerAddress peer = new PeerAddress(RegTestParams.get(), InetAddress.getByName("178.63.228.217"), 18444);
+                kit.setPeerNodes(peer);
+                // logger.info("Detected regtest mode, attempting to connect to local peer (" + host + ":" + port + ").");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
         kit.setBlockingStartup(false);
         kit.setDownloadListener(new DownloadProgressTracker() {
