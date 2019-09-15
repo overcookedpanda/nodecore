@@ -96,13 +96,13 @@ public class PoPMiningTransaction {
             return this;
         }
 
-        private Transaction bitcoinTransaction_;
+        private byte[] bitcoinTransaction_;
 
-        public Transaction getBitcoinTransaction() {
+        public byte[] getBitcoinTransaction() {
             return bitcoinTransaction_;
         }
 
-        public Builder setBitcoinTransaction(Transaction value) {
+        public Builder setBitcoinTransaction(byte[] value) {
             bitcoinTransaction_ = value;
             return this;
         }
@@ -143,11 +143,13 @@ public class PoPMiningTransaction {
         public PoPMiningTransaction build() {
             PoPMiningTransaction transaction = new PoPMiningTransaction();
             transaction.setEndorsedBlockHeader(getPopMiningInstruction().endorsedBlockHeader);
-            transaction.setBitcoinTransaction(BitcoinTransactionUtility.parseTxIDRelevantBits(getBitcoinTransaction().bitcoinSerialize()));
+            transaction.setBitcoinTransaction(getBitcoinTransaction());
             transaction.setBitcoinMerklePathToRoot(getBitcoinMerklePathToRoot().getBytes());
             transaction.setBitcoinBlockHeaderOfProof(Utility.serializeBlock(getBitcoinBlockHeaderOfProof()));
 
-            List<byte[]> blockHeaders = getBitcoinContextBlocks().stream().map(Utility::serializeBlock).collect(Collectors.toList());
+            List<byte[]> blockHeaders = getBitcoinContextBlocks().stream()
+                    .map(Utility::serializeBlock)
+                    .collect(Collectors.toList());
             byte[][] contextHeaders = new byte[blockHeaders.size()][];
 
             transaction.setBitcoinContextBlocks(blockHeaders.toArray(contextHeaders));
