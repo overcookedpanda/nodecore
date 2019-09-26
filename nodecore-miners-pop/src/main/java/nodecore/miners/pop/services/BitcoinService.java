@@ -293,6 +293,11 @@ public final class BitcoinService implements BlocksDownloadedEventListener {
             return null;
         }
     }
+    
+    @Override
+    public StoredBlock getLastBlock() {
+        return blockChain.getChainHead();
+    }
 
     public StoredBlock getLastBlock() {
         return blockChain.getChainHead();
