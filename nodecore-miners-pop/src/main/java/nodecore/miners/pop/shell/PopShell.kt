@@ -22,7 +22,12 @@ import nodecore.miners.pop.events.PoPMiningOperationStateChangedEvent
 import nodecore.miners.pop.events.WalletSeedAgreementMissingEvent
 import nodecore.miners.pop.services.MessageService
 import nodecore.miners.pop.services.NodeCoreService
-import nodecore.miners.pop.shell.commands.*
+import nodecore.miners.pop.shell.commands.bitcoinWalletCommands
+import nodecore.miners.pop.shell.commands.configCommands
+import nodecore.miners.pop.shell.commands.diagnosticCommands
+import nodecore.miners.pop.shell.commands.miningCommands
+import nodecore.miners.pop.shell.commands.standardCommands
+import nodecore.miners.pop.shell.commands.veriBlockWalletCommands
 import org.jline.utils.AttributedStyle
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -30,6 +35,7 @@ import org.veriblock.core.utilities.DiagnosticUtility
 import org.veriblock.shell.Shell
 import java.util.concurrent.CompletableFuture
 import kotlin.system.exitProcess
+
 
 class PopShell(
     private val miner: PoPMiner,

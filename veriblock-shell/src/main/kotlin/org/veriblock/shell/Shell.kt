@@ -220,4 +220,8 @@ open class Shell(
     fun registerCommand(command: Command) {
         commandFactory.registerCommand(command)
     }
+
+    fun interrupt() {
+        terminal.raise(Terminal.Signal.INT)
+    }
 }
