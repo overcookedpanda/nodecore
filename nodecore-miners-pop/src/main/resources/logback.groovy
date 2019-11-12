@@ -47,4 +47,4 @@ def level = toLevel(logLevel, INFO)
 logger("nodecore.miners.pop", level, ["TERMINAL"], false)
 logger("org.bitcoinj", INFO, ["BITCOINJ-FILE"], false)
 
-root(DEBUG, ["FILE"])
+root(INFO, ["FILE"])
