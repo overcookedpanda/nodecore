@@ -102,7 +102,7 @@ class PopShell(
                 while (readLine()!!.toUpperCase() != "Y") {
                     counter++
                     if (counter >= 3) {
-                        System.exit(1)
+                        exitProcess(1)
                     }
                     print(listOf<String?>("This application contains a Bitcoin wallet. The seed words which can be used to recover this wallet will be displayed below. Press 'y' to continue..."))
                 }
@@ -126,7 +126,7 @@ class PopShell(
     }
 
     @Subscribe
-    fun onPoPMinerReady(event: PoPMinerReadyEvent?) {
+    fun onPoPMinerReady(event: PoPMinerReadyEvent) {
         try {
             printInfo("**********************************************************************************************")
             printInfo("* Ready to start mining. Type 'help' to see available commands. Type 'mine' to start mining. *")
@@ -149,7 +149,7 @@ class PopShell(
     }
 
     @Subscribe
-    fun onWalletSeedAgreementMissing(event: WalletSeedAgreementMissingEvent?) {
+    fun onWalletSeedAgreementMissing(event: WalletSeedAgreementMissingEvent) {
         this.mustAcceptWalletSeed = true
     }
 
