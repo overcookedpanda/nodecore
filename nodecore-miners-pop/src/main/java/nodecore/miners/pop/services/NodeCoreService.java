@@ -222,7 +222,9 @@ public class NodeCoreService {
     }
 
     public VeriBlockHeader getLastBlock() {
-        GetLastBlockReply reply = _blockingStub.withDeadlineAfter(10, TimeUnit.SECONDS).getLastBlock(GetLastBlockRequest.newBuilder().build());
+        GetLastBlockReply reply = _blockingStub
+                .withDeadlineAfter(10, TimeUnit.SECONDS)
+                .getLastBlock(GetLastBlockRequest.newBuilder().build());
 
         return new VeriBlockHeader(reply.getHeader().getHeader().toByteArray());
     }
@@ -272,7 +274,7 @@ public class NodeCoreService {
             try {
                 latestBlock = getLastBlock();
             } catch (Exception e) {
-                _logger.error("NodeCore Error", e);
+                _logger.error("Unable to get the last block from NodeCore");
                 healthy.set(false);
                 InternalEventBus.getInstance().post(new NodeCoreUnhealthyEvent());
                 return;
