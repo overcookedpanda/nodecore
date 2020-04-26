@@ -1,5 +1,5 @@
 // VeriBlock NodeCore
-// Copyright 2017-2019 Xenios SEZC
+// Copyright 2017-2020 Xenios SEZC
 // All rights reserved.
 // https://www.veriblock.org
 // Distributed under the MIT software license, see the accompanying
@@ -8,6 +8,8 @@
 package org.veriblock.extensions.ledger;
 
 import nodecore.api.grpc.VeriBlockMessages;
+
+import java.util.Objects;
 
 /**
  * The LedgerValue class acts only as a leaf node in the ledger tree.
@@ -75,6 +77,11 @@ public class LedgerValue {
                     && other._signatureIndex == _signatureIndex;
         }
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(_availableAtomicUnits, _frozenAtomicUnits, _signatureIndex);
     }
 
     /**

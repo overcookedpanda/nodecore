@@ -1,6 +1,6 @@
 // VeriBlock Blockchain Project
 // Copyright 2017-2018 VeriBlock, Inc
-// Copyright 2018-2019 Xenios SEZC
+// Copyright 2018-2020 Xenios SEZC
 // All rights reserved.
 // https://www.veriblock.org
 // Distributed under the MIT software license, see the accompanying
@@ -15,29 +15,30 @@ class Command(
     val form: String,
     val description: String,
     val parameters: List<CommandParameter>,
-    val execute: (CommandContext) -> Result
-)
+    val suggestedCommands: () -> List<String> = { emptyList() },
+    val extraData: String? = null,
+    val action: (CommandContext) -> Result
+) {
+    override fun toString() = form
+}
 
 class CommandParameter(
     val name: String,
-    val type: CommandParameterType,
+    val mapper: CommandParameterMapper,
     val required: Boolean = true
-)
-
-enum class CommandParameterType {
-    STRING,
-    INTEGER,
-    LONG,
-    AMOUNT
+) {
+    override fun toString() = name
 }
 
-fun Shell.command(
+fun CommandFactory.command(
     name: String,
     form: String,
     description: String,
     parameters: List<CommandParameter> = emptyList(),
+    suggestedCommands: () -> List<String> = { emptyList() },
+    extraData: String? = null,
     action: CommandContext.() -> Result
 ) {
-    val command = Command(name, form, description, parameters, action)
+    val command = Command(name, form, description, parameters, suggestedCommands, extraData, action)
     registerCommand(command)
 }

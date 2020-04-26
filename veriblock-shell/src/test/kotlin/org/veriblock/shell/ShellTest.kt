@@ -1,6 +1,6 @@
 // VeriBlock Blockchain Project
 // Copyright 2017-2018 VeriBlock, Inc
-// Copyright 2018-2019 Xenios SEZC
+// Copyright 2018-2020 Xenios SEZC
 // All rights reserved.
 // https://www.veriblock.org
 // Distributed under the MIT software license, see the accompanying
@@ -36,18 +36,13 @@ class ShellTest {
 
         // and a shell configured with the greet command
         val outStream = ByteArrayOutputStream()
-        val shell = Shell(
-            ShellTestData(
-                inputStream = inputStream,
-                outputStream =  outStream
-            )
-        ).apply {
+        val commandFactory = CommandFactory().apply {
             command(
                 name = "Greet",
                 form = "greet",
                 description = "Greets someone",
                 parameters = listOf(
-                    CommandParameter("who", CommandParameterType.STRING)
+                    CommandParameter("who", CommandParameterMappers.STRING)
                 )
             ) {
                 val who: String = getParameter("who")
@@ -55,6 +50,13 @@ class ShellTest {
                 success()
             }
         }
+        val shell = Shell(
+            commandFactory,
+            ShellTestData(
+                inputStream = inputStream,
+                outputStream =  outStream
+            )
+        )
 
         // When
         shell.run()
@@ -69,7 +71,8 @@ class ShellTest {
             output shouldContain "The command 'test' is not supported"
             output shouldContain "[V009] Syntax error"
             output shouldContain "[V004] Unknown protocol command"
-            output shouldContain "Usage: greet <who> ERROR: parameter 'who' is required"
+            output shouldContain "Usage: greet <who>"
+            output shouldContain "ERROR: parameter 'who' is required"
             output shouldContain "Hello World!"
         }
     }

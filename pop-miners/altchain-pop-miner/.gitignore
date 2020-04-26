@@ -1,0 +1,15 @@
+
+generated
+
+mock
+mock.dat
+mock-shm
+mock-wal
+altchain-pop-miner.db
+*.spvchain
+*.wallet
+*.txmon
+*.dat-shm
+*.dat-wal
+
+/application.conf

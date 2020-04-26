@@ -1,5 +1,5 @@
 // VeriBlock NodeCore
-// Copyright 2017-2019 Xenios SEZC
+// Copyright 2017-2020 Xenios SEZC
 // All rights reserved.
 // https://www.veriblock.org
 // Distributed under the MIT software license, see the accompanying
@@ -339,7 +339,7 @@ public class Peer {
             initialize(ownsConnection);
             return true;
         } catch (Exception e) {
-            logger.warn("Unable to open connection to " + address + ":" + port + "!", e);
+            logger.debug("Unable to open connection to " + address + ":" + port + "!", e);
             return false;
         }
     }
@@ -439,7 +439,7 @@ public class Peer {
 
     public static Peer createOutboundPeer(String address, int port, Selector selector) {
         try {
-            logger.info("Attempting to establish client connection to peer " + address + ":" + port);
+            logger.debug("Attempting to establish client connection to peer " + address + ":" + port);
             SocketAddress socketAddress = new InetSocketAddress(address, port);
             SocketChannel socketChannel = SocketChannel.open(socketAddress);
             socketChannel.configureBlocking(false);
@@ -449,7 +449,7 @@ public class Peer {
             selectionKey.attach(peer);
             return peer;
         } catch (IOException e) {
-            logger.warn("Unable to open connection to " + address + ":" + port + "!");
+            logger.debug("Unable to open connection to " + address + ":" + port + "!");
         }
 
         return null;

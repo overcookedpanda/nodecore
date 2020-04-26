@@ -1,5 +1,5 @@
 // VeriBlock NodeCore
-// Copyright 2017-2019 Xenios SEZC
+// Copyright 2017-2020 Xenios SEZC
 // All rights reserved.
 // https://www.veriblock.org
 // Distributed under the MIT software license, see the accompanying
@@ -7,7 +7,6 @@
 
 package nodecore.p2p;
 
-import com.google.inject.Inject;
 import org.xbill.DNS.Lookup;
 import org.xbill.DNS.Record;
 import org.xbill.DNS.TextParseException;
@@ -18,7 +17,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DnsResolver {
-    @Inject
     public DnsResolver() {}
 
     public List<String> query(String dns) throws TextParseException {

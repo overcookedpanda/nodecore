@@ -1,5 +1,5 @@
 // VeriBlock NodeCore
-// Copyright 2017-2019 Xenios SEZC
+// Copyright 2017-2020 Xenios SEZC
 // All rights reserved.
 // https://www.veriblock.org
 // Distributed under the MIT software license, see the accompanying
@@ -162,6 +162,12 @@ public class LedgerProofWithContext {
         for (int i = 0; i < topPath.length; i++) {
             builder.addLedgerProofContextLayers(ByteString.copyFrom(topPath[i]));
         }
+
+        VeriBlockMessages.BlockHeader.Builder blockHeaderBuilder = VeriBlockMessages.BlockHeader.newBuilder();
+        blockHeaderBuilder.setHeader(ByteString.copyFrom(containingHeader));
+        blockHeaderBuilder.setHash(ByteString.copyFrom(Utility.hexToBytes(BlockUtility.hashBlock(containingHeader))));
+
+        builder.setBlockHeader(blockHeaderBuilder);
 
         return builder;
     }

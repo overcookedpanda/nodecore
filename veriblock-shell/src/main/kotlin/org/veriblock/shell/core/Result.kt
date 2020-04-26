@@ -1,6 +1,6 @@
 // VeriBlock Blockchain Project
 // Copyright 2017-2018 VeriBlock, Inc
-// Copyright 2018-2019 Xenios SEZC
+// Copyright 2018-2020 Xenios SEZC
 // All rights reserved.
 // https://www.veriblock.org
 // Distributed under the MIT software license, see the accompanying
@@ -34,3 +34,12 @@ class Result(
 
 inline fun success(builder: Result.() -> Unit = {}) = Result(false).apply { builder() }
 inline fun failure(builder: Result.() -> Unit = {}) = Result(true).apply { builder() }
+
+fun success(code: String, message: String, details: String) = success {
+    addMessage(code, message, details, true)
+}
+
+fun failure(code: String, message: String, details: String) = failure {
+    addMessage(code, message, details, true)
+}
+

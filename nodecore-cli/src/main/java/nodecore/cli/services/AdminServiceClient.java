@@ -1,5 +1,5 @@
 // VeriBlock NodeCore CLI
-// Copyright 2017-2019 Xenios SEZC
+// Copyright 2017-2020 Xenios SEZC
 // All rights reserved.
 // https://www.veriblock.org
 // Distributed under the MIT software license, see the accompanying
@@ -13,8 +13,8 @@ import nodecore.api.grpc.AdminGrpc;
 import nodecore.api.grpc.AdminRpcConfiguration;
 import nodecore.api.grpc.VeriBlockMessages;
 import nodecore.api.grpc.utilities.ChannelBuilder;
+import nodecore.cli.Configuration;
 import nodecore.cli.contracts.AdminService;
-import nodecore.cli.contracts.Configuration;
 import nodecore.cli.contracts.EndpointTransportType;
 
 import javax.net.ssl.SSLException;
@@ -37,7 +37,8 @@ public class AdminServiceClient implements AdminService {
 
         Channel interceptorChannel = channelBuilder.attachPasswordInterceptor(channel);
 
-        blockingStub = AdminGrpc.newBlockingStub(interceptorChannel);
+        blockingStub =
+            AdminGrpc.newBlockingStub(interceptorChannel).withMaxInboundMessageSize(20 * 1024 * 1024).withMaxOutboundMessageSize(20 * 1024 * 1024);
     }
 
     public void shutdown() throws InterruptedException {

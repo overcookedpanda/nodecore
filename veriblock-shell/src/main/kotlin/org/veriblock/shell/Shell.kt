@@ -1,6 +1,6 @@
 // VeriBlock Blockchain Project
 // Copyright 2017-2018 VeriBlock, Inc
-// Copyright 2018-2019 Xenios SEZC
+// Copyright 2018-2020 Xenios SEZC
 // All rights reserved.
 // https://www.veriblock.org
 // Distributed under the MIT software license, see the accompanying
@@ -8,11 +8,15 @@
 
 package org.veriblock.shell
 
+import com.google.common.base.Stopwatch
 import com.google.gson.GsonBuilder
+import org.jline.reader.Completer
 import org.jline.reader.EndOfFileException
 import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
 import org.jline.reader.UserInterruptException
+import org.jline.reader.impl.LineReaderImpl
+import org.jline.reader.impl.completer.StringsCompleter
 import org.jline.terminal.Terminal
 import org.jline.terminal.TerminalBuilder
 import org.jline.utils.AttributedStringBuilder
@@ -24,15 +28,17 @@ import org.veriblock.shell.core.ActivityLevel
 import org.veriblock.shell.core.Result
 import org.veriblock.shell.core.failure
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.ArrayList
+import java.util.Date
 
 private val logger = LoggerFactory.getLogger(Shell::class.java)
 private val printLogger = LoggerFactory.getLogger("shell-printing")
 
+@Suppress("LeakingThis")
 open class Shell(
+    private val commandFactory: CommandFactory,
     testData: ShellTestData? = null
 ) {
-    private val commandFactory = CommandFactory()
     private val dateFormatter: SimpleDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 
     private var running = false
@@ -44,20 +50,27 @@ open class Shell(
             system(true)
         }
     }.build()
+
     val reader: LineReader = LineReaderBuilder.builder()
         .terminal(terminal)
+        .completer(getCompleter())
         .build()
 
     init {
         currentShell = this
     }
 
-    private fun getPrompt() = AttributedStringBuilder()
+    fun refreshCompleter() {
+        (reader as LineReaderImpl).completer = getCompleter()
+        reader.setOpt(LineReader.Option.DISABLE_EVENT_EXPANSION)
+    }
+
+    protected open fun getPrompt(): String = AttributedStringBuilder()
         .style(AttributedStyle.BOLD.foreground(AttributedStyle.GREEN))
         .append(" > ")
         .toAnsi(terminal)
 
-    private fun readLine(): String? = try {
+    fun readLine(): String? = try {
         val read = reader.readLine(getPrompt())
         println(read)
         printLogger.info(read)
@@ -67,6 +80,8 @@ open class Shell(
     } catch (eof: EndOfFileException) {
         null
     }
+
+    fun passwordPrompt(prompt: String): String? = reader.readLine(prompt, '*')
 
     private fun startRunning() {
         running = true
@@ -99,11 +114,13 @@ open class Shell(
             if (input.isEmpty())
                 continue
 
+            val stopwatch = Stopwatch.createStarted()
+
             var clear: Boolean? = null
             val executeResult: Result = try {
                 val commandResult = commandFactory.getInstance(input)
-                val context = CommandContext(this, commandResult.parameters)
-                val result = commandResult.command.execute(context)
+                val context = CommandContext(this, commandResult.command, commandResult.parameters)
+                var result = commandResult.command.action(context)
 
                 if (!result.isFailed) {
                     if (context.quit) {
@@ -111,6 +128,13 @@ open class Shell(
                     }
 
                     clear = context.clear
+                }
+
+                result = handleResult(context, result)
+
+                // Suggest commands after the command has been handled and only if it has not failed
+                if (!result.isFailed) {
+                    context.suggestCommands()
                 }
 
                 result
@@ -121,23 +145,35 @@ open class Shell(
                     }
                 }
             } catch (e: Exception) {
-                logger.error("V999: Unhandled Exception", e)
-
-                failure {
-                    addMessage(
-                        "V999",
-                        "Unhandled exception",
-                        e.toString(),
-                        true
-                    )
-                }
+                handleException(e)
             }
 
             printResultWithFormat(executeResult)
+            if (!executeResult.isFailed) {
+                printStyled("200 success ", AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN), false)
+            } else {
+                printStyled("500 failure ", AttributedStyle.DEFAULT.foreground(AttributedStyle.RED), false)
+            }
+            printStyled("($stopwatch)\n", AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW))
 
             if (clear != null && clear) {
                 clear()
             }
+        }
+    }
+
+    protected open fun handleResult(context: CommandContext, result: Result): Result = result
+
+    protected open fun handleException(exception: Exception): Result {
+        logger.error("V999: Unhandled Exception", exception)
+
+        return failure {
+            addMessage(
+                "V999",
+                "Unhandled exception",
+                exception.toString(),
+                true
+            )
         }
     }
 
@@ -183,7 +219,7 @@ open class Shell(
         }
     }
 
-    private fun printResultWithFormat(result: Result) {
+    protected fun printResultWithFormat(result: Result) {
         val formatted = ArrayList<ShellMessage>()
         for (msg in result.getMessages()) {
             formatted.add(
@@ -208,23 +244,52 @@ open class Shell(
         printLogger.warn(message)
     }
 
+    fun printNormal(message: String) {
+        printStyled(message, AttributedStyle.BOLD.foreground(AttributedStyle.WHITE))
+        printLogger.warn(message)
+    }
+
     fun renderFromThrowable(t: Throwable) {
         printWarning("${t.message}\n\n")
     }
 
-    fun printStyled(message: String, style: AttributedStyle) {
-        terminal.writer().println(
+    private val printStyledStringBuilder = StringBuilder()
+
+    @JvmOverloads
+    fun printStyled(message: String, style: AttributedStyle, newLine: Boolean = true) {
+        printStyledStringBuilder.append(
             AttributedStringBuilder()
                 .style(style)
                 .append(message)
                 .toAnsi(terminal)
         )
-        terminal.writer().flush()
+
+        if (newLine) {
+            reader.printAbove(printStyledStringBuilder.toString())
+            printStyledStringBuilder.clear()
+        }
     }
 
-    fun getCommands() = commandFactory.getCommands()
+    fun getCommandsByAlias() = commandFactory.getCommands()
 
-    fun registerCommand(command: Command) {
-        commandFactory.registerCommand(command)
+    fun getCommands() = commandFactory.getCommands().values.distinct()
+
+    fun getCommand(alias: String) = commandFactory.getCommands()[alias]
+        ?: error("Command $alias not found!")
+
+    private fun getCompleter(): Completer {
+        val commands = getCommands().asSequence().filter {
+            it.shouldAutoComplete()
+        }.map {
+            it.form.split('|').first()
+        }.toList()
+
+        return StringsCompleter(commands)
+    }
+
+    protected open fun Command.shouldAutoComplete(): Boolean = true
+
+    fun interrupt() {
+        terminal.raise(Terminal.Signal.INT)
     }
 }

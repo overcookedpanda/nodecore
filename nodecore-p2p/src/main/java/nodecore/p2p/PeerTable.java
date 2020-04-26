@@ -1,5 +1,5 @@
 // VeriBlock NodeCore
-// Copyright 2017-2019 Xenios SEZC
+// Copyright 2017-2020 Xenios SEZC
 // All rights reserved.
 // https://www.veriblock.org
 // Distributed under the MIT software license, see the accompanying
@@ -9,8 +9,6 @@ package nodecore.p2p;
 
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.InetAddresses;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import nodecore.p2p.events.ExternalPeerAdded;
 import nodecore.p2p.events.ExternalPeerRemoved;
 import nodecore.p2p.events.PeerBannedEvent;
@@ -27,12 +25,15 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-@Singleton
 public class PeerTable {
 
     private static final Logger logger = LoggerFactory.getLogger(PeerTable.class);
@@ -61,7 +62,6 @@ public class PeerTable {
     private Runnable onConnected = null;
     private Runnable onDisconnected = null;
 
-    @Inject
     public PeerTable(P2PConfiguration configuration, PeerWarden warden, PeerTableBootstrapper bootstrapper) {
         this.networkParameters = configuration.getNetworkParameters();
         this.bootstrapPeerLimit = configuration.getBootstrapLimit();
@@ -252,7 +252,7 @@ public class PeerTable {
         }
 
         peerCandidates.put(node.getAddressKey(), node);
-        logger.info("Added {} as a peer candidate", node.getAddressKey());
+        logger.debug("Added {} as a peer candidate", node.getAddressKey());
     }
 
     public List<NodeMetadata> getPeerCandidates() {
@@ -287,7 +287,7 @@ public class PeerTable {
 
         peers.put(peer.getAddressKey(), peer);
 
-        logger.info("Added peer {}", peer.getAddressKey());
+        logger.debug("Added peer {}", peer.getAddressKey());
 
         if (onConnected != null) {
             onConnected.run();
@@ -311,7 +311,7 @@ public class PeerTable {
         try {
             groomPeers();
             releaseDoNotConnect();
-            logger.info("Ensure min peers...");
+            logger.debug("Ensure min peers...");
             ensureMinimumConnectedPeers();
             if (getAvailablePeers().size() == 0) {
                 logger.info("After attempting to ensure minimum peers we still have 0, removing all do-not-connect constraints...");
@@ -320,7 +320,7 @@ public class PeerTable {
                 ensureMinimumConnectedPeers();
                 logger.info("After removing do-not-connect constraints, we have " + getAvailablePeers().size() + " available peers.");
             }
-            logger.info("Releasing bans...");
+            logger.debug("Releasing bans...");
             releaseExpiredBans();
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -376,7 +376,7 @@ public class PeerTable {
                 if (peers.containsKey(candidate.getAddressKey()) || doNotConnect.containsKey(candidate.getAddress()))
                     continue;
 
-                logger.info("Attempting to connect with {}:{}", candidate.getAddress(), candidate.getPort());
+                logger.debug("Attempting to connect with {}:{}", candidate.getAddress(), candidate.getPort());
                 Optional<Peer> peer = attemptOutboundPeerConnect(candidate.getAddress(), candidate.getPort());
 
                 if (peer.isPresent()) {
