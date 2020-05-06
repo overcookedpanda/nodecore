@@ -8,9 +8,8 @@
 
 package org.veriblock.miners.pop.service
 
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.first
 import org.veriblock.core.altchain.checkForValidEndorsement
+import org.veriblock.core.utilities.AddressUtility
 import org.veriblock.core.utilities.Utility
 import org.veriblock.core.utilities.createLogger
 import org.veriblock.core.utilities.debugError
@@ -63,7 +62,7 @@ class ApmTaskService(
         val vbkContextBlockHash = publicationData.context[0]
         val vbkContextBlock = nodeCoreLiteKit.network.getBlock(VBlakeHash.wrap(vbkContextBlockHash))
             ?: failOperation("Unable to find the mining instruction's VBK context block ${vbkContextBlockHash.toHex()}")
-        val vbkChainHead = nodeCoreLiteKit.blockChain.getChainHead()
+        val vbkChainHead = nodeCoreLiteKit.network.lastBlockHeader
             ?: failOperation("Unable to get VBK's chain head!")
         val contextAge = vbkChainHead.height - vbkContextBlock.height
         if (contextAge > MAX_CONTEXT_AGE) {
@@ -99,6 +98,14 @@ class ApmTaskService(
             failOperation("Could not create endorsement VBK transaction: ${e.message}")
         }
 
+        val valid = AddressUtility.isSignatureValid(
+            transaction.id.bytes, transaction.signature, transaction.publicKey, transaction.sourceAddress.address
+        )
+
+        if (!valid) {
+            failOperation("Endorsement VBK transaction signature is not valid")
+        }
+
         val walletTransaction = nodeCoreLiteKit.transactionMonitor.getTransaction(transaction.id)
         operation.setTransaction(ApmSpTransaction(walletTransaction))
         logger.info(operation, "Successfully added the VBK transaction: ${walletTransaction.id}!")
@@ -126,6 +133,7 @@ class ApmTaskService(
 
         // Transaction has been confirmed!
         operation.setConfirmed()
+        nodeCoreLiteKit.updateBalance()
     }
 
     override suspend fun determineBlockOfProof(operation: ApmOperation) = operation.runTask(
@@ -140,11 +148,11 @@ class ApmTaskService(
             ?: failTask("Unable to retrieve block of proof from transaction")
 
         try {
-            val block = nodeCoreLiteKit.blockChain.get(blockHash)
-                ?: failTask("Unable to retrieve VBK block $blockHash")
+            val block = nodeCoreLiteKit.gateway.getVBKBlockHeader(blockHash.bytes)
+
             operation.setBlockOfProof(ApmSpBlock(block))
         } catch (e: BlockStoreException) {
-            failTask("Error when retrieving VBK block $blockHash")
+            failTask("Error when retrieving VBK block ${transaction.transactionMeta.txId}")
         }
         logger.info(operation, "Successfully added the VBK block of proof!")
     }
@@ -188,20 +196,17 @@ class ApmTaskService(
             ?: failTask("RegisterVeriBlockPublicationPollingTask called without block of proof!")
         val miningInstruction = operation.miningInstruction
             ?: failTask("RegisterVeriBlockPublicationPollingTask called without mining instruction!")
-
         logger.info(operation, "Waiting for the next VBK Keystone...")
         val keystoneOfProofHeight = blockOfProof.height / 20 * 20 + 20
-        val keystoneOfProof = nodeCoreLiteKit.blockChain.newBestBlockChannel.asFlow().first { block ->
-            logger.debug(operation, "Checking block ${block.hash} @ ${block.height}...")
-            if (block.height > keystoneOfProofHeight) {
-                failOperation(
-                    "The next VBK Keystone has been skipped!" +
-                        " Expected keystone height: $keystoneOfProofHeight; received block height: ${block.height}"
-                )
-            }
-            block.height == keystoneOfProofHeight
+
+        while (nodeCoreLiteKit.gateway.getLastVBKBlockHeader().height < keystoneOfProofHeight) {
+            Thread.sleep(5000L)
         }
+
+        val keystoneOfProof = nodeCoreLiteKit.gateway.getVBKBlockHeader(keystoneOfProofHeight)
+
         logger.info(operation, "Keystone of Proof received: ${keystoneOfProof.hash} @ ${keystoneOfProof.height}")
+
 
         // We will be waiting for this operation's veriblock publication, which will trigger the SubmitProofOfProofTask
         val publications = nodeCoreLiteKit.network.getVeriBlockPublications(
@@ -262,7 +267,7 @@ class ApmTaskService(
                 val serializedAnchorBTCBlocks = VTBDebugUtility.serializeBitcoinBlockHashList(anchorBTCBlocks)
                 val serializedToConnectBTCBlocks = VTBDebugUtility.serializeBitcoinBlockHashList(toConnectBTCBlocks)
 
-                if (!VTBDebugUtility.doVtbsConnect(anchor, toConnect)) {
+                if (!VTBDebugUtility.doVtbsConnect(anchor, toConnect, (if (i > 1) publications.subList(0, i-1) else ArrayList<VeriBlockPublication>()))) {
                     logger.error {
                         """Error: VTB at index $i does not connect to the previous VTB!
                                    VTB #${i - 1} BTC blocks:
@@ -301,7 +306,7 @@ class ApmTaskService(
                 merklePath,
                 blockOfProof,
                 miningInstruction.context.map {
-                    SerializeDeserializeService.parseVeriBlockBlock(it)
+                    nodeCoreLiteKit.gateway.getVBKBlockHeader(it)
                 }
             )
 
