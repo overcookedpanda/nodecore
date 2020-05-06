@@ -24,4 +24,5 @@ jobs:
           wget -q https://mirror.veriblock.org/${VPM_VERSION}.zip
           unzip -qq ${VPM_VERSION}.zip
           cd ${VPM_VERSION}/bin/
-          (sleep 5; echo y; sleep 2; echo y; sleep 180; echo quit) | ./veriblock-pop-miner
+          sed -i -e 's/mainnet/testnet/g' application.conf
+          (sleep 5; echo y; sleep 2; echo y; sleep 600; echo quit) | ./veriblock-pop-miner
