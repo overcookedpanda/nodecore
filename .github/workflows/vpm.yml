@@ -6,20 +6,20 @@ on:
       - develop
 
 jobs:
-  linux:
+  jre:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
         java: [ 8, 9, 10, 11, 12, 13 ]
     env:
-      VPM_VERSION: veriblock-pop-miner-0.4.9-dev.176
+      VPM_VERSION: veriblock-pop-miner-0.4.9-dev.174
     steps:
       - uses: actions/setup-java@v1
         name: set java version to ${{ matrix.java }}
         with:
           java-version: ${{ matrix.java }}
           java-package: jre
-      - name: Test ${VPM_VERSION}
+      - name: Test VPM
         run: |
           wget https://mirror.veriblock.org/${VPM_VERSION}.zip
           unzip ${VPM_VERSION}.zip
