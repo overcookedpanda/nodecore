@@ -1,0 +1,27 @@
+name: VPM
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  linux:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        java: [ 8, 9, 10, 11, 12, 13 ]
+    env:
+      VPM_VERSION: veriblock-pop-miner-0.4.9-dev.176
+    steps:
+      - uses: actions/setup-java@v1
+        name: set java version to ${{ matrix.java }}
+        with:
+          java-version: ${{ matrix.java }}
+          java-package: jre
+      - name: Test ${VPM_VERSION}
+        run: |
+          wget https://mirror.veriblock.org/${VPM_VERSION}.zip
+          unzip ${VPM_VERSION}.zip
+          cd ${VPM_VERSION}/bin/
+          (sleep 5; echo y; sleep 2; echo y; sleep 180; echo quit) | ./veriblock-pop-miner
