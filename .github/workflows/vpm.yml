@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        java: [ 8.0.252, 11.0.7, 12.0.0, 13.0.3, 14.0.1 ]
+        java: [ 8.0.252, 11.0.7, 13.0.3, 14.0.1 ]
     env:
       VPM_VERSION: veriblock-pop-miner-0.4.9-dev.174
     steps:
